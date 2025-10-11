@@ -1,0 +1,177 @@
+name: Kernel Builder
+permissions:
+  contents: write
+  actions: write
+
+on:
+  workflow_call:
+    inputs:
+      KSU:
+        type: string
+        required: true
+      SUSFS:
+        type: boolean
+        required: true
+      LXC:
+        type: boolean
+        required: true
+      BBG:
+        type: boolean
+        required: true
+      TG_NOTIFY:
+        type: boolean
+        required: true
+
+    outputs:
+      kernel_version:
+        description: "Kernel version"
+        value: ${{ jobs.build.outputs.kernel_version }}
+      susfs_version:
+        description: "SUSFS version"
+        value: ${{ jobs.build.outputs.susfs_version }}
+      toolchain:
+        description: "Toolchain"
+        value: ${{ jobs.build.outputs.toolchain }}
+      build_date:
+        description: "Build timestamp"
+        value: ${{ jobs.build.outputs.build_date }}
+      release_repo:
+        description: "Release repo"
+        value: ${{ jobs.build.outputs.release_repo }}
+      release_branch:
+        description: "Release branch"
+        value: ${{ jobs.build.outputs.release_branch }}
+      kernel_name:
+        description: "Kernel name"
+        value: ${{ jobs.build.outputs.kernel_name }}
+
+  workflow_dispatch:
+    inputs:
+      KSU:
+        description: "KernelSU variant"
+        default: "NONE"
+        type: choice
+        options: ["NONE", "RKSU", "NEXT", "SUKI"]
+
+      SUSFS:
+        description: "Include SUSFS?"
+        default: false
+        type: boolean
+
+      LXC:
+        description: "Apply LXC patch?"
+        default: false
+        type: boolean
+      
+      BBG:
+        description: "Include Baseband-guard?"
+        default: false
+        type: boolean
+
+      TG_NOTIFY:
+        description: "Telegram Notify"
+        default: true
+        type: boolean
+
+env:
+  DEBIAN_FRONTEND: noninteractive
+  MAN_DISABLE: true
+  FORCE_COLOR: "1"
+  TTY_COMPATIBLE: "1"
+  TERM: xterm-256color
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    env:
+      TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+      TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+    outputs:
+      kernel_version: ${{ steps.build.outputs.kernel_version }}
+      susfs_version: ${{ steps.build.outputs.susfs_version }}
+      toolchain: ${{ steps.build.outputs.toolchain }}
+      build_date: ${{ steps.build.outputs.build_date }}
+      release_repo: ${{ steps.build.outputs.release_repo }}
+      release_branch: ${{ steps.build.outputs.release_branch }}
+      kernel_name: ${{ steps.build.outputs.kernel_name }}
+
+    steps:
+      - name: Fail SUSFS requirement check
+        if: ${{ inputs.SUSFS == true && inputs.KSU == 'NONE' }}
+        run: |
+          echo "::error::Cannot use SUSFS without KernelSU"
+          exit 1
+
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -qq \
+            bc bison ccache curl flex git tar wget aria2 jq zip zstd upx build-essential python3-requests
+        
+      - name: Prepare ccache
+        run: |
+          echo "CCACHE_DIR=$HOME/.ccache" >> "$GITHUB_ENV"
+          echo "CCACHE_BASEDIR=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+          mkdir -p "$HOME/.ccache"
+          ccache --set-config=compiler_check=content
+          ccache --set-config=hash_dir=false
+          ccache --set-config=sloppiness=file_macro,include_file_ctime,include_file_mtime,time_macros
+          ccache --set-config=direct_mode=true
+          ccache --set-config=max_size=7G
+          ccache --zero-stats
+          ccache --show-config
+          echo "clang_hash=$(clang --version | sha256sum | cut -c1-10 || echo none)" >> "$GITHUB_ENV"
+
+      - name: Restore ccache
+        id: restore-ccache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-${{ runner.os }}-${{ env.clang_hash }}-${{ inputs.KSU }}-${{ inputs.SUSFS }}-${{ inputs.LXC }}-${{ github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ runner.os }}-${{ env.clang_hash }}-${{ inputs.KSU }}-${{ inputs.SUSFS }}-${{ inputs.LXC }}-${{ github.ref_name }}-
+            ccache-${{ runner.os }}-${{ env.clang_hash }}-${{ inputs.KSU }}-${{ inputs.SUSFS }}-${{ inputs.LXC }}-
+
+      - name: Build
+        id: build
+        env:
+          KSU: ${{ inputs.KSU }}
+          SUSFS: ${{ inputs.SUSFS }}
+          LXC: ${{ inputs.LXC }}
+          BBG: ${{ inputs.BBG }}
+          TG_NOTIFY: ${{ inputs.TG_NOTIFY }}
+          SOURCE_DATE_EPOCH: "1704067200"
+        run: |
+          chmod +x build.sh
+          ./build.sh
+          
+          file="$GITHUB_WORKSPACE/github.env"
+          [[ -f "$file" ]] || { echo "::error::github.env missing"; exit 1; }
+          cat "$file" >> "$GITHUB_OUTPUT"
+
+      - name: Save ccache
+        if: ${{ always() && steps.restore-ccache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-${{ runner.os }}-${{ env.clang_hash }}-${{ inputs.KSU }}-${{ inputs.SUSFS }}-${{ inputs.LXC }}-${{ github.ref_name }}-${{ github.sha }}
+
+      - name: Upload AnyKernel3 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.build.outputs.name }}-${{ steps.build.outputs.variant }}-AnyKernel3
+          path: ${{ steps.build.outputs.out_dir }}/${{ steps.build.outputs.package_name }}-AnyKernel3.zip
+
+      - name: Upload boot image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.build.outputs.name }}-${{ steps.build.outputs.variant }}-boot
+          path: ${{ steps.build.outputs.out_dir }}/${{ steps.build.outputs.package_name }}-boot.img
