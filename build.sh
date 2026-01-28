@@ -519,13 +519,13 @@ package_bootimg() {
         --output boot.img \
         --ramdisk out/ramdisk \
         --os_version 12.0.0 \
-        --os_patch_level "2099-12" \
-        && "$BUILD_TOOLS/linux-x86/bin/avbtool" add_hash_footer \
-            --partition_name boot \
-            --partition_size $((64 * 1024 * 1024)) \
-            --image boot.img \
-            --algorithm SHA256_RSA4096 \
-            --key "$BOOT_SIGN_KEY"
+        --os_patch_level "2099-12"
+    "$BUILD_TOOLS/linux-x86/bin/avbtool" add_hash_footer \
+        --partition_name boot \
+        --partition_size $((64 * 1024 * 1024)) \
+        --image boot.img \
+        --algorithm SHA256_RSA4096 \
+        --key "$BOOT_SIGN_KEY"
 
     cp "$BOOT_IMAGE/boot.img" "$OUT_DIR/$package_name-boot.img"
 
