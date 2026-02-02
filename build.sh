@@ -234,7 +234,7 @@ clang_lto() {
 ################################################################################
 
 init_logging() {
-    exec > >(sed -u $'s/\x1b\\[[0-9;]*m//g' | tee "$LOGFILE") 2>&1
+    exec > >(tee -a "$LOGFILE") 2>&1;
 }
 
 validate_env() {
