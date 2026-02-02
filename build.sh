@@ -120,9 +120,9 @@ error() {
     local msg
     msg=$(
         cat << EOF
-*$(escape_md_v2 "$KERNEL_NAME Kernel CI")*
+❌ *$(escape_md_v2 "$KERNEL_NAME Kernel CI")*
 
-*Tags*: \#$(escape_md_v2 "$BUILD_TAG") \#error
+🏷️ *Tags*: \#$(escape_md_v2 "$BUILD_TAG") \#error
 
 $(escape_md_v2 "ERROR: $*")
 EOF
@@ -257,16 +257,16 @@ send_start_msg() {
     local start_msg
     start_msg=$(
         cat << EOF
-*$(escape_md_v2 "$KERNEL_NAME Kernel Build Started!")*
+🚧 *$(escape_md_v2 "$KERNEL_NAME Kernel Build Started!")*
 
-*Tags*: \#$(escape_md_v2 "$BUILD_TAG")
+🏷️ *Tags*: \#$(escape_md_v2 "$BUILD_TAG")
 
-*Build info*
+🧱 *Build Info*
 ├ Builder: $(escape_md_v2 "$KBUILD_BUILD_USER@$KBUILD_BUILD_HOST")
 ├ Defconfig: $(escape_md_v2 "$KERNEL_DEFCONFIG")
 └ Jobs: $(escape_md_v2 "$JOBS")
 
-*Build options*
+⚙️ *Features*
 ├ KernelSU: $(escape_md_v2 "$(parse_bool "$ksu_included") | $KSU")
 ├ SuSFS: $(parse_bool "$SUSFS")
 ├ BBG: $(parse_bool "$BBG")
@@ -282,7 +282,7 @@ prepare_dirs() {
         "$MKBOOTIMG" "$OUT_DIR" "$BOOT_IMAGE"
         "$WORKSPACE/susfs" "$WORKSPACE/wild_patches"
     )
-    info "Resetting directories: ${RESET_DIR_LIST[*]}"
+    info "Resetting directories: $(printf '%s ' "${RESET_DIR_LIST[@]##*/}")"
     for dir in "${RESET_DIR_LIST[@]}"; do
         reset_dir "$dir"
     done
@@ -536,7 +536,6 @@ write_metadata() {
 kernel_version=$KERNEL_VERSION
 kernel_name=$KERNEL_NAME
 toolchain=$COMPILER_STRING
-build_date=$KBUILD_BUILD_TIMESTAMP
 package_name=$package_name
 susfs_version=$SUSFS_VERSION
 variant=$VARIANT
@@ -559,28 +558,23 @@ notify_success() {
     local result_caption
     result_caption=$(
         cat << EOF
-*$(escape_md_v2 "$KERNEL_NAME Build Successfully!")*
+✅ *$(escape_md_v2 "$KERNEL_NAME Build Successfully!")*
 
-*Tags*: \#$(escape_md_v2 "$BUILD_TAG") \#$(escape_md_v2 "$additional_tag")
+🏷️ *Tags*: \#$(escape_md_v2 "$BUILD_TAG") \#$(escape_md_v2 "$additional_tag")
 
-*Build*
+🧱 *Build*
 ├ Builder: $(escape_md_v2 "$KBUILD_BUILD_USER@$KBUILD_BUILD_HOST")
-├ Build time: $(escape_md_v2 "${minutes}m ${seconds}s")
 └ Build date: $(escape_md_v2 "$KBUILD_BUILD_TIMESTAMP")
 
-*Kernel*
+🐧 *Kernel*
 ├ Linux version: $(escape_md_v2 "$KERNEL_VERSION")
 └ Compiler: $(escape_md_v2 "$COMPILER_STRING")
 
-*Options*
+📦 *Options*
 ├ KernelSU: $(escape_md_v2 "$KSU")
 ├ SuSFS: $(is_true "$SUSFS" && escape_md_v2 "$SUSFS_VERSION" || echo "Disabled")
 ├ BBG: $(parse_bool "$BBG")
 └ LXC: $(parse_bool "$LXC")
-
-*Artifact*
-├ Name: $(escape_md_v2 "$(basename "$final_package")")
-└ Size: $(escape_md_v2 "$(du -h "$final_package" | cut -f1)")
 EOF
     )
 
