@@ -42,17 +42,17 @@ jobs:
   release:
     name: Create Release
     needs: build
-    if: ${{ github.event.inputs.create_release }}
+    if: ${{ github.event.inputs.create_release == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout current repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6.0.1
         with:
           fetch-depth: 1
 
       - name: Download All Artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           path: release_files
 
@@ -78,7 +78,7 @@ jobs:
           echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
 
       - name: Upload builds to release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v2.5.0
         with:
           repository: ${{ env.RELEASE_REPO }}
           name: "${{ env.KERNEL_NAME }} Kernel ${{ env.RELEASE_TAG }}"

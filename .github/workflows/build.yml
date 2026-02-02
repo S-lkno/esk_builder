@@ -53,8 +53,6 @@ on:
 env:
   DEBIAN_FRONTEND: noninteractive
   MAN_DISABLE: true
-  FORCE_COLOR: "1"
-  TTY_COMPATIBLE: "1"
   TERM: xterm-256color
 
 jobs:
@@ -74,7 +72,7 @@ jobs:
           exit 1
 
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6.0.1
         with:
           fetch-depth: 1
 
@@ -100,7 +98,7 @@ jobs:
 
       - name: Restore ccache
         id: restore-ccache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5.0.3
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ccache-${{ runner.os }}-${{ env.clang_hash }}-${{ inputs.KSU }}-${{ inputs.SUSFS }}-${{ inputs.LXC }}-${{ github.ref_name }}-${{ github.sha }}
@@ -127,19 +125,20 @@ jobs:
 
       - name: Save ccache
         if: ${{ always() && steps.restore-ccache.outputs.cache-hit != 'true' }}
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5.0.3
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ccache-${{ runner.os }}-${{ env.clang_hash }}-${{ inputs.KSU }}-${{ inputs.SUSFS }}-${{ inputs.LXC }}-${{ github.ref_name }}-${{ github.sha }}
 
       - name: Upload AnyKernel3 artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ steps.build.outputs.name }}-${{ steps.build.outputs.variant }}-AnyKernel3
           path: ${{ steps.build.outputs.out_dir }}/${{ steps.build.outputs.package_name }}-AnyKernel3.zip
+          compression-level: 0
 
       - name: Upload boot image artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ steps.build.outputs.name }}-${{ steps.build.outputs.variant }}-boot
           path: ${{ steps.build.outputs.out_dir }}/${{ steps.build.outputs.package_name }}-boot.img
