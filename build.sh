@@ -340,8 +340,6 @@ setup_toolchain() {
     export PATH="${CLANG_BIN}:$PATH"
 
     COMPILER_STRING="$("$CLANG_BIN/clang" -v 2>&1 | head -n 1 | sed 's/(https..*//')"
-    KBUILD_BUILD_TIMESTAMP="$(date +"%a %d %b %H:%M")"
-    export KBUILD_BUILD_TIMESTAMP
     export KBUILD_BUILD_USER
     export KBUILD_BUILD_HOST
 }
