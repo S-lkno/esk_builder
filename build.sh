@@ -96,6 +96,14 @@ info "Build tag generated: $BUILD_TAG"
 # Telegram python utils path
 TG_PY="$WORKSPACE/py/tg.py"
 
+tg_run_line() {
+  if [[ -n ${GITHUB_SERVER_URL:-} && -n ${GITHUB_REPOSITORY:-} && -n ${GITHUB_RUN_ID:-} ]]; then
+    printf '🔗 [Workflow run](%s)\n' "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+  else
+    printf '🔗 Workflow run: Not available\n'
+  fi
+}
+
 telegram_send_msg() {
     is_true "$TG_NOTIFY" || return 0
     printf '%s' "$*" | python3 "$TG_PY" msg
@@ -123,6 +131,7 @@ error() {
 ❌ *$(escape_md_v2 "$KERNEL_NAME Kernel CI")*
 
 🏷️ *Tags*: \#$(escape_md_v2 "$BUILD_TAG") \#error
+$(tg_run_line)
 
 $(escape_md_v2 "ERROR: $*")
 EOF
@@ -260,6 +269,7 @@ send_start_msg() {
 🚧 *$(escape_md_v2 "$KERNEL_NAME Kernel Build Started!")*
 
 🏷️ *Tags*: \#$(escape_md_v2 "$BUILD_TAG")
+$(tg_run_line)
 
 🧱 *Build Info*
 ├ Builder: $(escape_md_v2 "$KBUILD_BUILD_USER@$KBUILD_BUILD_HOST")
@@ -561,10 +571,11 @@ notify_success() {
 ✅ *$(escape_md_v2 "$KERNEL_NAME Build Successfully!")*
 
 🏷️ *Tags*: \#$(escape_md_v2 "$BUILD_TAG") \#$(escape_md_v2 "$additional_tag")
+$(tg_run_line)
 
 🧱 *Build*
 ├ Builder: $(escape_md_v2 "$KBUILD_BUILD_USER@$KBUILD_BUILD_HOST")
-└ Build date: $(escape_md_v2 "$KBUILD_BUILD_TIMESTAMP")
+└ Build time: $(escape_md_v2 "${minutes}m ${seconds}s")
 
 🐧 *Kernel*
 ├ Linux version: $(escape_md_v2 "$KERNEL_VERSION")
