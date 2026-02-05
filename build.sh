@@ -206,16 +206,7 @@ install_ksu() {
 
 # Wrapper for scripts/config
 config() {
-    local cfg="$KERNEL_OUT/.config"
-    if [[ -f $cfg ]]; then
-        "$KERNEL/scripts/config" --file "$cfg" "$@"
-    else
-        "$KERNEL/scripts/config" --file "$KERNEL/arch/arm64/configs/$KERNEL_DEFCONFIG" "$@"
-    fi
-}
-
-regenerate_defconfig() {
-    make "${MAKE_ARGS[@]}" -s olddefconfig
+    "$KERNEL/scripts/config" --file "$KERNEL/arch/arm64/configs/$KERNEL_DEFCONFIG" "$@"
 }
 
 clang_lto() {
@@ -235,7 +226,6 @@ clang_lto() {
             config --disable CONFIG_LTO_CLANG_FULL
             ;;
     esac
-    regenerate_defconfig
 }
 
 ################################################################################
@@ -380,7 +370,7 @@ apply_susfs() {
     success "SuSFS applied!"
 }
 
-prebuild_kernel() {
+prepare_build() {
     cd "$KERNEL"
 
     # Defconfig existence check
@@ -416,6 +406,9 @@ prebuild_kernel() {
         patch -s -p1 --fuzz=3 --no-backup-if-mismatch < "$KERNEL_PATCHES/lxc_support.patch"
         success "LXC patch applied"
     fi
+
+    # Config Clang LTO
+    clang_lto "$CLANG_LTO"
 }
 
 build_kernel() {
@@ -427,37 +420,10 @@ build_kernel() {
     make "${MAKE_ARGS[@]}" "$KERNEL_DEFCONFIG" > /dev/null 2>&1
     success "Defconfig generated"
 
-    clang_lto "$CLANG_LTO"
-
     make "${MAKE_ARGS[@]}" Image
     success "Kernel built successfully"
 
     KERNEL_VERSION=$(make -s kernelversion | cut -d- -f1)
-}
-
-kpm_patcher() {
-    if [[ $KSU == "SUKI" ]]; then
-        info "Patching KPM for SukiSU variant..."
-        tmp="$(mktemp -d)" && cd "$tmp"
-        cp -p "$KERNEL_OUT/arch/arm64/boot/Image" "$tmp"/
-
-        KPM_PATCHER="https://github.com/SukiSU-Ultra/SukiSU_patch/raw/refs/heads/main/kpm/patch_linux"
-        curl -fsSL "$KPM_PATCHER" -o patch_linux
-
-        chmod +x ./patch_linux
-        ./patch_linux > /dev/null 2>&1
-
-        [[ -f oImage ]] || error "patch_linux failed to produce patched Image"
-        mv oImage "$ANYKERNEL/Image"
-
-        # Clean-up
-        rm -rf ./patch_linux
-        cd "$ANYKERNEL"
-        rm -rf "$tmp"
-        success "Patched KPM for SukiSU variant"
-    else
-        cp -p "$KERNEL_OUT/arch/arm64/boot/Image" "$ANYKERNEL"/
-    fi
 }
 
 package_anykernel() {
@@ -466,9 +432,7 @@ package_anykernel() {
     info "Packaging AnyKernel3 zip..."
     pushd "$ANYKERNEL" > /dev/null
 
-    # Patch KPM for SukiSU variant
-    # kpm_patcher() will copy the Image to AnyKernel folder
-    kpm_patcher
+    cp -p "$KERNEL_OUT/arch/arm64/boot/Image" "$ANYKERNEL"/
 
     info "Compressing kernel image..."
     zstd -19 -T0 --no-progress -o Image.zst Image > /dev/null 2>&1
@@ -614,7 +578,7 @@ main() {
     prepare_dirs
     fetch_sources
     setup_toolchain
-    prebuild_kernel
+    prepare_build
     build_kernel
 
     # Build package name
