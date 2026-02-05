@@ -97,11 +97,11 @@ info "Build tag generated: $BUILD_TAG"
 TG_PY="$WORKSPACE/py/tg.py"
 
 tg_run_line() {
-  if [[ -n ${GITHUB_SERVER_URL:-} && -n ${GITHUB_REPOSITORY:-} && -n ${GITHUB_RUN_ID:-} ]]; then
-    printf '🔗 [Workflow run](%s)\n' "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-  else
-    printf '🔗 Workflow run: Not available\n'
-  fi
+    if [[ -n ${GITHUB_SERVER_URL:-} && -n ${GITHUB_REPOSITORY:-} && -n ${GITHUB_RUN_ID:-} ]]; then
+        printf '🔗 [Workflow run](%s)\n' "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+    else
+        printf '🔗 Workflow run: Not available\n'
+    fi
 }
 
 telegram_send_msg() {
@@ -243,7 +243,7 @@ clang_lto() {
 ################################################################################
 
 init_logging() {
-    exec > >(tee -a "$LOGFILE") 2>&1;
+    exec > >(tee -a "$LOGFILE") 2>&1
 }
 
 validate_env() {
@@ -255,8 +255,15 @@ validate_env() {
     fi
 
     # For the python telegram util
-    export TG_BOT_TOKEN
-    export TG_CHAT_ID
+    if is_true "$TG_NOTIFY"; then
+        export TG_BOT_TOKEN
+        export TG_CHAT_ID
+    fi
+
+    # Config checks
+    if is_true "$SUSFS" && [[ "$KSU" == "NONE" ]]; then
+        error "Cannot use SUSFS without KernelSU"
+    fi
 }
 
 send_start_msg() {
@@ -279,7 +286,6 @@ $(tg_run_line)
 ⚙️ *Features*
 ├ KernelSU: $(escape_md_v2 "$(parse_bool "$ksu_included") | $KSU")
 ├ SuSFS: $(parse_bool "$SUSFS")
-├ BBG: $(parse_bool "$BBG")
 └ LXC: $(parse_bool "$LXC")
 EOF
     )
@@ -370,7 +376,6 @@ apply_susfs() {
 
     cd "$KERNEL"
     config --enable CONFIG_KSU_SUSFS
-    config --disable CONFIG_KSU_SUSFS_SPOOF_UNAME
 
     success "SuSFS applied!"
 }
@@ -410,15 +415,6 @@ prebuild_kernel() {
         info "Apply LXC patch"
         patch -s -p1 --fuzz=3 --no-backup-if-mismatch < "$KERNEL_PATCHES/lxc_support.patch"
         success "LXC patch applied"
-    fi
-
-    # BBG
-    if is_true "$BBG"; then
-        info "Setup Baseband Guard (BBG) LSM"
-        wget -qO- https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh | bash > /dev/null 2>&1
-        sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/bpf/bpf,baseband_guard/ } }' security/Kconfig
-        config --enable CONFIG_BBG
-        success "Added BBG"
     fi
 }
 
@@ -584,7 +580,6 @@ $(tg_run_line)
 📦 *Options*
 ├ KernelSU: $(escape_md_v2 "$KSU")
 ├ SuSFS: $(is_true "$SUSFS" && escape_md_v2 "$SUSFS_VERSION" || echo "Disabled")
-├ BBG: $(parse_bool "$BBG")
 └ LXC: $(parse_bool "$LXC")
 EOF
     )
@@ -626,7 +621,6 @@ main() {
     VARIANT="$KSU"
     is_true "$SUSFS" && VARIANT+="-SUSFS"
     is_true "$LXC" && VARIANT+="-LXC"
-    is_true "$BBG" && VARIANT+="-BBG"
     PACKAGE_NAME="$KERNEL_NAME-$KERNEL_VERSION-$VARIANT"
 
     # Build flashable package
