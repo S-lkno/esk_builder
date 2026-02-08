@@ -164,8 +164,6 @@ KSU="${KSU:-NONE}"
 SUSFS="$(norm_bool "${SUSFS:-false}")"
 # Apply LXC patch?
 LXC="$(norm_bool "${LXC:-false}")"
-# Include BBG?
-BBG="$(norm_bool "${BBG:-false}")"
 
 # --- Paths
 KERNEL_PATCHES="$WORKSPACE/kernel_patches"
