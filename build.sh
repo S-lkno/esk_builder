@@ -2,7 +2,7 @@
 #
 # Personal ESK Kernel build script
 #
-set -Ee
+set -Eeuo pipefail
 
 # Workspace path
 WORKSPACE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -348,7 +348,7 @@ fetch_sources() {
 setup_toolchain() {
     _use_toolchain() {
         export PATH="$CLANG_BIN:$PATH"
-        COMPILER_STRING="$("$CLANG_BIN/clang" -v 2>&1 | head -n 1 | sed 's/(https..*//')"
+        COMPILER_STRING="$("$CLANG_BIN/clang" --version | head -n 1 | sed 's/(https..*//')"
         export KBUILD_BUILD_USER KBUILD_BUILD_HOST
     }
 
@@ -557,7 +557,6 @@ kernel_version=$KERNEL_VERSION
 kernel_name=$KERNEL_NAME
 toolchain=$COMPILER_STRING
 package_name=$package_name
-susfs_version=$SUSFS_VERSION
 variant=$VARIANT
 name=$KERNEL_NAME
 out_dir=$OUT_DIR
