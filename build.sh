@@ -414,7 +414,11 @@ apply_susfs() {
 
     patch -s -p1 --fuzz=3 --no-backup-if-mismatch < "$SUSFS_PATCHES"/50_add_susfs_in_gki-android*-*.patch
 
-    cd "$KERNEL"
+    # Apply pershoot's SUSFS patch for KernelSU Next
+    if [[ "$KSU" == "NEXT" ]]; then
+        patch -s -p1 < "$KERNEL_PATCHES"/pershoot-susfs.patch
+    fi
+
     config --enable CONFIG_KSU_SUSFS
 
     success "SuSFS applied!"
