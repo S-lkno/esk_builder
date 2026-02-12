@@ -158,8 +158,8 @@ trap 'error "Build failed at line $LINENO: $BASH_COMMAND"' ERR
 ################################################################################
 
 # --- Kernel flavour
-# KernelSU variant: NONE | RKSU | NEXT | SUKI
-KSU="${KSU:-NONE}"
+# Kernel flavour: VNL | KSU
+KSU="${KSU:-VNL}"
 # Include SuSFS?
 SUSFS="$(norm_bool "${SUSFS:-false}")"
 # Apply LXC patch?
@@ -212,6 +212,10 @@ info "Mode: $(is_ci && echo CI || echo local)"
 
 # Set timezone
 export TZ="$TIMEZONE"
+
+# Convenient variable 
+ksu_included="true"
+[[ $KSU == "VNL" ]] && ksu_included="false"
 
 ################################################################################
 # Feature-specific helpers
@@ -280,15 +284,12 @@ validate_env() {
     fi
 
     # Config checks
-    if is_true "$SUSFS" && [[ "$KSU" == "NONE" ]]; then
+    if is_true "$SUSFS" && [[ "$KSU" == "VNL" ]]; then
         error "Cannot use SUSFS without KernelSU"
     fi
 }
 
 send_start_msg() {
-    local ksu_included="true"
-    [[ $KSU == "NONE" ]] && ksu_included="false"
-
     local start_msg
     start_msg=$(
         cat << EOF
@@ -303,7 +304,7 @@ $(tg_run_line)
 └ Jobs: $(escape_md_v2 "$JOBS")
 
 ⚙️ *Features*
-├ KernelSU: $(escape_md_v2 "$(parse_bool "$ksu_included") | $KSU")
+├ KernelSU: $(parse_bool "$ksu_included")
 ├ SuSFS: $(parse_bool "$SUSFS")
 └ LXC: $(parse_bool "$LXC")
 EOF
@@ -411,11 +412,7 @@ apply_susfs() {
     cp -R "$SUSFS_PATCHES"/include/* ./include
 
     patch -s -p1 --fuzz=3 --no-backup-if-mismatch < "$SUSFS_PATCHES"/50_add_susfs_in_gki-android*-*.patch
-
-    # Apply pershoot's SUSFS patch for KernelSU Next
-    if [[ "$KSU" == "NEXT" ]]; then
-        patch -s -p1 < "$KERNEL_PATCHES"/pershoot-susfs.patch
-    fi
+    SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
 
     config --enable CONFIG_KSU_SUSFS
 
@@ -429,19 +426,10 @@ prepare_build() {
     DEFCONFIG_FILE="$KERNEL/arch/arm64/configs/$KERNEL_DEFCONFIG"
     [[ -f $DEFCONFIG_FILE ]] || error "Defconfig not found: $KERNEL_DEFCONFIG"
 
-    # KernelSU
-    local ksu_included="true"
-    [[ $KSU == "NONE" ]] && ksu_included="false"
-
     if is_true "$ksu_included"; then
         info "Setup KernelSU"
-        case "$KSU" in
-            RKSU) install_ksu rsuntk/KernelSU "$(ksu_branch "susfs-rksu-master" "main")" ;;
-            NEXT) install_ksu pershoot/KernelSU-Next "$(ksu_branch "dev-susfs" "dev")" ;;
-            SUKI) install_ksu SukiSU-Ultra/SukiSU-Ultra "$(ksu_branch "builtin" "main")" ;;
-        esac
+        install_ksu ESK-Project/ReSukiSU "main"
         config --enable CONFIG_KSU
-
         success "KernelSU added"
     fi
 
@@ -488,29 +476,6 @@ package_anykernel() {
     zstd -19 -T0 --no-progress -o Image.zst Image > /dev/null 2>&1
     rm -f ./Image
     sha256sum Image.zst > Image.zst.sha256
-
-    info "[UPX] Compressing AnyKernel3 static binaries..."
-    local UPX_LIST=(
-        tools/zstd
-        tools/fec
-        tools/httools_static
-        tools/lptools_static
-        tools/magiskboot
-        tools/magiskpolicy
-        tools/snapshotupdater_static
-    )
-    for binary in "${UPX_LIST[@]}"; do
-        local file="$ANYKERNEL/$binary"
-        [[ -f $file ]] || {
-            warn "[UPX] Binary not found: $binary"
-            continue
-        }
-        if upx -9 --lzma --no-progress "$file" > /dev/null 2>&1; then
-            success "[UPX] Compressed: $(basename "$binary")"
-        else
-            warn "[UPX] Failed: $(basename "$binary")"
-        fi
-    done
 
     zip -r9q -T -X -y -n .zst "$OUT_DIR/$package_name-AnyKernel3.zip" . -x '.git/*' '*.log'
 
@@ -591,7 +556,7 @@ $(tg_run_line)
 └ Compiler: $(escape_md_v2 "$COMPILER_STRING")
 
 📦 *Options*
-├ KernelSU: $(escape_md_v2 "$KSU")
+├ KernelSU: $(parse_bool "$ksu_included")
 ├ SuSFS: $(is_true "$SUSFS" && escape_md_v2 "$SUSFS_VERSION" || echo "Disabled")
 └ LXC: $(parse_bool "$LXC")
 EOF
