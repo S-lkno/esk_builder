@@ -15,9 +15,6 @@ on:
       LXC:
         type: boolean
         required: true
-      BBG:
-        type: boolean
-        required: true
       TG_NOTIFY:
         type: boolean
         required: true
@@ -37,11 +34,6 @@ on:
 
       LXC:
         description: "Apply LXC patch?"
-        default: false
-        type: boolean
-      
-      BBG:
-        description: "Include Baseband-guard?"
         default: false
         type: boolean
 
@@ -106,7 +98,6 @@ jobs:
           KSU: ${{ inputs.KSU }}
           SUSFS: ${{ inputs.SUSFS }}
           LXC: ${{ inputs.LXC }}
-          BBG: ${{ inputs.BBG }}
           TG_NOTIFY: ${{ inputs.TG_NOTIFY }}
           SOURCE_DATE_EPOCH: "1704067200"
         run: |
