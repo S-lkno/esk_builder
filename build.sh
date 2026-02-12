@@ -213,7 +213,7 @@ info "Mode: $(is_ci && echo CI || echo local)"
 # Set timezone
 export TZ="$TIMEZONE"
 
-# Convenient variable 
+# Convenient variable
 ksu_included="true"
 [[ $KSU == "VNL" ]] && ksu_included="false"
 
