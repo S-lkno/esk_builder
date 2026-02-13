@@ -89,7 +89,7 @@ jobs:
             | Suffix | Description |
             |--------|-------------|
             | **-VNL** | No KernelSU |
-            | **-KSU | KernelSU |
+            | **-KSU** | KernelSU |
             | **-SUSFS** | SUSFS Support |
             | **-LXC** | LXC Support |
 
