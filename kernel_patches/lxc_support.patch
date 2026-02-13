@@ -93,6 +93,24 @@ index 1cfa7f651e45..ba7d1a519b2f 100644
  CONFIG_HVC_DCC=y
  CONFIG_HVC_DCC_SERIALIZE_SMP=y
  CONFIG_SERIAL_DEV_BUS=y
+@@ -538,3 +550,24 @@ CONFIG_USB_CONFIGFS_F_MIDI=y
+ CONFIG_USB_CONFIGFS_F_HID=y
+ CONFIG_USB_CONFIGFS_F_UVC=y
+ CONFIG_USB_CONFIGFS_F_PRINTER=y
++
++# USB Serial Support (for CH340, PL2303, CP2102, FTDI etc.)
++CONFIG_USB_SERIAL=y
++CONFIG_USB_SERIAL_CONSOLE=y
++CONFIG_USB_SERIAL_GENERIC=y
++CONFIG_USB_SERIAL_PL2303=y
++CONFIG_USB_SERIAL_CP210X=y
++CONFIG_USB_SERIAL_CH341=y
++CONFIG_USB_SERIAL_FTDI_SIO=y
++CONFIG_USB_SERIAL_OPTION=y
++CONFIG_USB_SERIAL_DEBUG=y
++CONFIG_USB_ACM=y
++CONFIG_USB_PRINTER=y
++CONFIG_PROC_DEVICETREE=y
 diff --git a/drivers/gpu/mediatek/mali-valhall/gpu/arm/midgard/context/mali_kbase_context.c b/drivers/gpu/mediatek/mali-valhall/gpu/arm/midgard/context/mali_kbase_context.c
 index a71a08872dd8..dcfebb558651 100644
 --- a/drivers/gpu/mediatek/mali-valhall/gpu/arm/midgard/context/mali_kbase_context.c
