@@ -93,12 +93,10 @@ index 1cfa7f651e45..ba7d1a519b2f 100644
  CONFIG_HVC_DCC=y
  CONFIG_HVC_DCC_SERIALIZE_SMP=y
  CONFIG_SERIAL_DEV_BUS=y
-@@ -538,3 +550,24 @@ CONFIG_USB_CONFIGFS_F_MIDI=y
+@@ -538,3 +550,15 @@ CONFIG_USB_CONFIGFS_F_MIDI=y
  CONFIG_USB_CONFIGFS_F_HID=y
  CONFIG_USB_CONFIGFS_F_UVC=y
  CONFIG_USB_CONFIGFS_F_PRINTER=y
-+
-+# USB Serial Support (for CH340, PL2303, CP2102, FTDI etc.)
 +CONFIG_USB_SERIAL=y
 +CONFIG_USB_SERIAL_CONSOLE=y
 +CONFIG_USB_SERIAL_GENERIC=y
@@ -247,7 +245,7 @@ diff --git a/kernel/cgroup/cgroup.c b/kernel/cgroup/cgroup.c
 index 016939a9c6dc..9a1734254a8a 100644
 --- a/kernel/cgroup/cgroup.c
 +++ b/kernel/cgroup/cgroup.c
-@@ -4043,6 +4043,10 @@ static int cgroup_add_file(struct cgroup_subsys_state *css, struct cgroup *cgrp,
+@@ -4043,6 +4043,10 @@ static int cgroup_add_file(struct kbase_context *kctx, struct cgroup *cgrp,
  		cfile->kn = kn;
  		spin_unlock_irq(&cgroup_file_kn_lock);
  	}
