@@ -17,8 +17,8 @@ jobs:
     strategy:
       matrix:
         variant:
-          - { name: "Non-KSU", KSU: "NONE", SUSFS: false, LXC: false }
-          - { name: "Non-KSU-LXC", KSU: "NONE", SUSFS: false, LXC: true }
+          - { name: "VNL", KSU: "NONE", SUSFS: false, LXC: false }
+          - { name: "VNL-LXC", KSU: "NONE", SUSFS: false, LXC: true }
           - { name: "KSU", KSU: "KSU", SUSFS: false, LXC: false }
           - { name: "KSU-SUSFS", KSU: "KSU", SUSFS: true, LXC: false }
           - { name: "KSU-LXC", KSU: "KSU", SUSFS: false, LXC: true }
