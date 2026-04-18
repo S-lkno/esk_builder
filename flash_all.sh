@@ -1,98 +1,64 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# termux-usb fastboot 批量刷写脚本
-# 使用方法：bash flash_all.sh [设备路径]
-# 如果未提供设备路径，则尝试从环境变量 ANDROID_SERIAL 读取
+# termux-fastboot 批量刷入所有分区脚本
+# 用法: ./flash_all.sh <USB设备路径>
 
 set -e
 
-# 颜色定义
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
-# 获取设备路径
-DEVICE_PATH="$1"
-if [ -z "$DEVICE_PATH" ]; then
-    DEVICE_PATH="$ANDROID_SERIAL"
-fi
-if [ -z "$DEVICE_PATH" ]; then
-    echo -e "${RED}错误：未指定设备路径。${NC}"
-    echo "用法: $0 /dev/bus/usb/XXX/YYY"
-    echo "或先设置环境变量: export ANDROID_SERIAL=/dev/bus/usb/XXX/YYY"
+# 显示帮助
+if [ -z "$1" ]; then
+    echo "用法: $0 <USB设备路径>"
+    echo "获取设备路径: termux-usb -l"
+    echo "示例: $0 /dev/bus/usb/001/002"
     exit 1
 fi
 
-echo -e "${GREEN}使用设备路径: $DEVICE_PATH${NC}"
+DEVICE="$1"
 
-# 检查 termux-usb 是否可用
-if ! command -v termux-usb &> /dev/null; then
-    echo -e "${RED}错误：termux-usb 未安装，请运行 pkg install termux-api${NC}"
+# 定义跳过刷写的分区（无法通过 fastboot 刷写或会导致硬砖）
+SKIP_PARTITIONS=(
+    "preloader_raw" "preloader" "lk" "spmfw" "scp" "sspm" "gz" "ccu"
+    "dpm" "gpueb" "mcupm" "mvpu_algo" "vcp" "pi_img" "cdt_engineering"
+    "md1img" "mcf_ota"
+)
+
+# 检查是否存在 img 文件
+shopt -s nullglob
+IMGS=(*.img)
+if [ ${#IMGS[@]} -eq 0 ]; then
+    echo "错误: 当前目录下没有找到任何 .img 文件"
     exit 1
 fi
 
-# 检查 fastboot 是否可用
-if ! command -v fastboot &> /dev/null; then
-    echo -e "${RED}错误：fastboot 未安装，请运行 pkg install android-tools${NC}"
+# 测试 fastboot 连接
+echo "测试 fastboot 连接..."
+if ! termux-usb -r -e "fastboot devices" -E "$DEVICE" | grep -q "fastboot"; then
+    echo "错误: 未检测到 fastboot 设备，请确认手机已进入 fastboot 模式并已授权 USB 权限"
     exit 1
 fi
 
-# 测试连接
-echo -e "${YELLOW}测试 fastboot 连接...${NC}"
-if ! termux-usb -r -e "fastboot devices" -E "$DEVICE_PATH" | grep -q "fastboot"; then
-    echo -e "${RED}无法检测到 fastboot 设备，请确认目标手机已进入 fastboot 模式且 USB 权限已授予。${NC}"
-    exit 1
-fi
-echo -e "${GREEN}设备连接正常。${NC}"
-
-# 获取当前活动 slot（可选）
-CURRENT_SLOT=$(termux-usb -r -e "fastboot getvar current-slot" -E "$DEVICE_PATH" 2>/dev/null | grep "current-slot" | awk '{print $2}')
-if [ -n "$CURRENT_SLOT" ]; then
-    echo -e "${GREEN}当前 active slot: $CURRENT_SLOT${NC}"
-fi
-
-# 定义需要跳过的分区（这些分区通常不能单独刷写，或者会导致问题）
-SKIP_PARTITIONS="preloader preloader_raw lk lk2 scp spmfw gz md1img mcupm ccu dpm gpueb mcf_ota pi_img mvpu_algo vcp"
-
-# 开始刷写
-echo -e "${YELLOW}开始刷写所有 .img 文件...${NC}"
-COUNT=0
-SUCCESS=0
-FAIL=0
-
-for img in *.img; do
-    # 跳过如果不是文件
-    [ -f "$img" ] || continue
-
-    # 提取分区名（去掉 .img 后缀）
-    PARTITION="${img%.img}"
-
-    # 检查是否需要跳过
-    if echo "$SKIP_PARTITIONS" | grep -qw "$PARTITION"; then
-        echo -e "${YELLOW}跳过危险/保留分区: $PARTITION${NC}"
+# 逐个刷写
+for img in "${IMGS[@]}"; do
+    partition="${img%.img}"
+    SKIP=0
+    for skip in "${SKIP_PARTITIONS[@]}"; do
+        if [ "$partition" = "$skip" ]; then
+            echo "跳过 $partition (不安全或不可用 fastboot 刷写)"
+            SKIP=1
+            break
+        fi
+    done
+    if [ $SKIP -eq 1 ]; then
         continue
     fi
 
-    echo -e "${GREEN}[$((COUNT+1))] 正在刷写 $PARTITION -> $img${NC}"
-    set +e  # 临时允许错误，单个分区失败不终止脚本
-    termux-usb -r -e "fastboot flash $PARTITION $img" -E "$DEVICE_PATH"
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}  成功${NC}"
-        ((SUCCESS++))
-    else
-        echo -e "${RED}  失败${NC}"
-        ((FAIL++))
+    echo "正在刷写 $partition -> $img ..."
+    termux-usb -r -e "fastboot flash $partition $img" -E "$DEVICE"
+    if [ $? -ne 0 ]; then
+        echo "错误: 刷写 $partition 失败"
+        exit 1
     fi
-    set -e
-    ((COUNT++))
+    echo "$partition 刷写完成"
 done
 
-echo -e "${YELLOW}刷写完成。成功: $SUCCESS, 失败: $FAIL, 总计: $COUNT${NC}"
-
-# 可选：最后重启设备
-read -p "是否重启设备？(y/N) " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    termux-usb -r -e "fastboot reboot" -E "$DEVICE_PATH"
-    echo -e "${GREEN}设备正在重启...${NC}"
-fi
+echo "所有分区刷写完毕！"
+echo "可以执行重启命令: termux-usb -r -e \"fastboot reboot\" -E $DEVICE"
