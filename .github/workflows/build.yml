@@ -6,8 +6,11 @@ permissions:
 on:
   workflow_call:
     inputs:
-      KSU:
+      BUILD_TARGET:
         type: string
+        required: true
+      KSU:
+        type: boolean
         required: true
       SUSFS:
         type: boolean
@@ -15,12 +18,32 @@ on:
       LXC:
         type: boolean
         required: true
+      STOCK_CONFIG:
+        type: string
+        required: true
       TG_NOTIFY:
         type: boolean
         required: true
+      IS_RELEASE:
+        type: boolean
+        required: false
+        default: false
+
 
   workflow_dispatch:
     inputs:
+      BUILD_TARGET:
+        description: "Build target"
+        default: device
+        type: choice
+        options:
+          - device
+          - generic
+
+      BRANCH_OVERRIDE:
+        description: "Kernel branch overriding"
+        type: string
+
       KSU:
         description: "Include KernelSU?"
         default: false
@@ -36,20 +59,36 @@ on:
         default: false
         type: boolean
 
+      STOCK_CONFIG:
+        description: "Spoof stock config?"
+        default: auto
+        type: choice
+        options:
+          - auto
+          - true
+          - false
+
       TG_NOTIFY:
         description: "Telegram Notify"
         default: true
         type: boolean
 
+      IS_RELEASE:
+        description: "Is release build?"
+        default: false
+        type: boolean
+
+
 env:
   DEBIAN_FRONTEND: noninteractive
   MAN_DISABLE: true
   TERM: xterm-256color
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     env:
       TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
       TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
@@ -65,20 +104,18 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -qq \
-            bc bison ccache curl flex git tar wget aria2 jq zip zstd upx build-essential python3-requests
-        
-      - name: Prepare ccache
+            bc bison ccache curl flex git tar wget aria2 jq zip zstd upx build-essential libfaketime lz4 just
+
+      - name: Setup Python
+        uses: actions/setup-python@v6.2.0
+        with:
+          python-version: "3.14"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v8.1.0
+
+      - name: Compute ccache key
         run: |
-          echo "CCACHE_DIR=$HOME/.ccache" >> "$GITHUB_ENV"
-          echo "CCACHE_BASEDIR=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
-          mkdir -p "$HOME/.ccache"
-          ccache --set-config=compiler_check=content
-          ccache --set-config=hash_dir=false
-          ccache --set-config=sloppiness=file_macro,include_file_ctime,include_file_mtime,time_macros
-          ccache --set-config=direct_mode=true
-          ccache --set-config=max_size=7G
-          ccache --zero-stats
-          ccache --show-config
           echo "clang_hash=$(clang --version | sha256sum | cut -c1-10 || echo none)" >> "$GITHUB_ENV"
 
       - name: Restore ccache
@@ -86,33 +123,56 @@ jobs:
         uses: actions/cache/restore@v5.0.3
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ccache-${{ runner.os }}-${{ env.clang_hash }}-${{ inputs.KSU }}-${{ inputs.SUSFS }}-${{ inputs.LXC }}-${{ github.ref_name }}-${{ github.sha }}
+          key: ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ github.ref_name }}-${{ github.sha }}
           restore-keys: |
-            ccache-${{ runner.os }}-${{ env.clang_hash }}-${{ inputs.KSU }}-${{ inputs.SUSFS }}-${{ inputs.LXC }}-${{ github.ref_name }}-
-            ccache-${{ runner.os }}-${{ env.clang_hash }}-${{ inputs.KSU }}-${{ inputs.SUSFS }}-${{ inputs.LXC }}-
+            ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ github.ref_name }}-
+            ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-
+            ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-
+            ccache-${{ env.clang_hash }}-
 
       - name: Build
         id: build
         env:
+          BUILD_TARGET: ${{ inputs.BUILD_TARGET }}
+          BRANCH_OVERRIDE: ${{ inputs.BRANCH_OVERRIDE }}
           KSU: ${{ inputs.KSU }}
           SUSFS: ${{ inputs.SUSFS }}
           LXC: ${{ inputs.LXC }}
+          STOCK_CONFIG: ${{ inputs.STOCK_CONFIG }}
           TG_NOTIFY: ${{ inputs.TG_NOTIFY }}
-          SOURCE_DATE_EPOCH: "1704067200"
+          IS_RELEASE: ${{ inputs.IS_RELEASE }}
+
         run: |
-          chmod +x build.sh
-          ./build.sh
-          
-          file="$GITHUB_WORKSPACE/github.env"
-          [[ -f "$file" ]] || { echo "::error::github.env missing"; exit 1; }
-          cat "$file" >> "$GITHUB_OUTPUT"
+          just build
+
+          file="$GITHUB_WORKSPACE/github.json"
+          [[ -f "$file" ]] || { echo "::error::github.json missing"; exit 1; }
+          python3 - "$file" "$GITHUB_OUTPUT" <<'PY'
+          import json
+          import sys
+
+          with open(sys.argv[1]) as f:
+              data = json.load(f)
+
+          keys = ["name", "variant", "out_dir", "package_name"]
+          with open(sys.argv[2], "a") as out:
+              for key in keys:
+                  out.write(f"{key}={data[key]}\n")
+          PY
 
       - name: Save ccache
         if: ${{ always() && steps.restore-ccache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v5.0.3
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ccache-${{ runner.os }}-${{ env.clang_hash }}-${{ inputs.KSU }}-${{ inputs.SUSFS }}-${{ inputs.LXC }}-${{ github.ref_name }}-${{ github.sha }}
+          key: ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ github.ref_name }}-${{ github.sha }}
+
+      - name: Upload GitHub metadata artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: github-metadata-${{ steps.build.outputs.variant }}
+          path: ${{ github.workspace }}/github.json
+          compression-level: 0
 
       - name: Upload AnyKernel3 artifact
         uses: actions/upload-artifact@v6
@@ -123,6 +183,7 @@ jobs:
 
       - name: Upload boot image artifact
         uses: actions/upload-artifact@v6
+        if: inputs.BUILD_TARGET == 'generic'
         with:
           name: ${{ steps.build.outputs.name }}-${{ steps.build.outputs.variant }}-boot
-          path: ${{ steps.build.outputs.out_dir }}/${{ steps.build.outputs.package_name }}-boot.img
+          path: ${{ steps.build.outputs.out_dir }}/${{ steps.build.outputs.package_name }}-boot*.img
