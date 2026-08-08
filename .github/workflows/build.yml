@@ -18,6 +18,9 @@ on:
       LXC:
         type: boolean
         required: true
+      DROIDSPACES:
+        type: boolean
+        required: true
       STOCK_CONFIG:
         type: string
         required: true
@@ -56,6 +59,11 @@ on:
 
       LXC:
         description: "Apply LXC patch?"
+        default: false
+        type: boolean
+
+      DROIDSPACES:
+        description: "Apply Droidspaces patches?"
         default: false
         type: boolean
 
@@ -123,10 +131,10 @@ jobs:
         uses: actions/cache/restore@v5.0.3
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ github.ref_name }}-${{ github.sha }}
+          key: ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ inputs.DROIDSPACES }}-${{ github.ref_name }}-${{ github.sha }}
           restore-keys: |
-            ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ github.ref_name }}-
-            ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-
+            ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ inputs.DROIDSPACES }}-${{ github.ref_name }}-
+            ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ inputs.DROIDSPACES }}-
             ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-
             ccache-${{ env.clang_hash }}-
 
@@ -138,6 +146,7 @@ jobs:
           KSU: ${{ inputs.KSU }}
           SUSFS: ${{ inputs.SUSFS }}
           LXC: ${{ inputs.LXC }}
+          DROIDSPACES: ${{ inputs.DROIDSPACES }}
           STOCK_CONFIG: ${{ inputs.STOCK_CONFIG }}
           TG_NOTIFY: ${{ inputs.TG_NOTIFY }}
           IS_RELEASE: ${{ inputs.IS_RELEASE }}
@@ -165,7 +174,7 @@ jobs:
         uses: actions/cache/save@v5.0.3
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ github.ref_name }}-${{ github.sha }}
+          key: ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ inputs.DROIDSPACES }}-${{ github.ref_name }}-${{ github.sha }}
 
       - name: Upload GitHub metadata artifact
         uses: actions/upload-artifact@v6

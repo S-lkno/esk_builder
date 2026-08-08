@@ -78,6 +78,7 @@ init_build() {
     KSU="$(resolve_bool "${KSU-}" "$KSU_DEFAULT")"
     SUSFS="$(resolve_bool "${SUSFS-}" "$SUSFS_DEFAULT")"
     LXC="$(resolve_bool "${LXC-}" "$LXC_DEFAULT")"
+    DROIDSPACES="$(resolve_bool "${DROIDSPACES-}" "$DROIDSPACES_DEFAULT")"
     STOCK_CONFIG="$(resolve_bool "${STOCK_CONFIG-}" "$STOCK_CONFIG_DEFAULT" true)"
 
     TG_NOTIFY="$(resolve_bool "${TG_NOTIFY-}" "$TG_NOTIFY_DEFAULT")"
@@ -238,6 +239,14 @@ prepare_build() {
     if is_true "$LXC"; then
         info "Apply LXC patch"
         patch -s -p1 --fuzz=3 --no-backup-if-mismatch < "$KERNEL_PATCHES/lxc_support.patch"
+    fi
+
+    if is_true "$DROIDSPACES"; then
+        info "Apply Droidspaces kABI patch"
+        patch -s -p1 --fuzz=3 --no-backup-if-mismatch < "$KERNEL_PATCHES/002.5.10_or_lower_use_android_abi_padding_for_posix_mqueue.patch"
+
+        info "Merge Droidspaces config fragment"
+        KCONFIG_CONFIG="arch/arm64/configs/$KERNEL_DEFCONFIG" scripts/kconfig/merge_config.sh -m -r "arch/arm64/configs/$KERNEL_DEFCONFIG" "$KERNEL_PATCHES/droidspaces.config"
     fi
 
     if is_true "$STOCK_CONFIG"; then

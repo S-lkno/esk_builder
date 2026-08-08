@@ -57,6 +57,7 @@ jobs:
       KSU: ${{ matrix.variant.KSU }}
       SUSFS: ${{ matrix.variant.SUSFS }}
       LXC: ${{ matrix.variant.LXC }}
+      DROIDSPACES: ${{ matrix.variant.DROIDSPACES }}
       STOCK_CONFIG: auto
       TG_NOTIFY: false
       IS_RELEASE: true
