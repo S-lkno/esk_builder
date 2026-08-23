@@ -130,7 +130,7 @@ $(tg_run_line)
 *Kernel:* $(escape_md_v2 "$KERNEL_VERSION")
 *Commit:* [$(escape_md_v2 "$KERNEL_COMMIT")]($(escape_md_v2 "$kernel_commit_url"))
 *Compiler:* $(escape_md_v2 "$COMPILER_STRING")
-*Features:* KSU $(parse_bool "$KSU"), SuSFS $(is_true "$SUSFS" && escape_md_v2 "$SUSFS_VERSION" || echo "Disabled"), LXC $(parse_bool "$LXC"), Stock config $(parse_bool "$STOCK_CONFIG")
+*Features:* KSU $(parse_bool "$KSU"), SuSFS $(is_true "$SUSFS" && escape_md_v2 "$SUSFS_VERSION" || echo "Disabled"), LXC $(parse_bool "$LXC"), Droidspaces $(parse_bool "$DROIDSPACES"), USB serial $(parse_bool "$USB_SERIAL"), USB net $(parse_bool "$USB_NET"), Stock config $(parse_bool "$STOCK_CONFIG")
 EOF
     )
 

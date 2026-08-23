@@ -73,7 +73,7 @@ send_start_msg() {
 $(tg_run_line)
 *Target:* $(escape_md_v2 "$TARGET_NAME")
 *Defconfig:* $(escape_md_v2 "$KERNEL_DEFCONFIG")
-*Features:* KSU $(parse_bool "$KSU"), SuSFS $(parse_bool "$SUSFS"), LXC $(parse_bool "$LXC"), Droidspaces $(parse_bool "$DROIDSPACES"), Stock config $(parse_bool "$STOCK_CONFIG")
+*Features:* KSU $(parse_bool "$KSU"), SuSFS $(parse_bool "$SUSFS"), LXC $(parse_bool "$LXC"), Droidspaces $(parse_bool "$DROIDSPACES"), USB serial $(parse_bool "$USB_SERIAL"), USB net $(parse_bool "$USB_NET"), Stock config $(parse_bool "$STOCK_CONFIG")
 EOF
     )
     telegram_send_msg "$start_msg"

@@ -109,7 +109,7 @@ just generic
 Pass build settings after the recipe name:
 
 ```bash
-just device KSU=true SUSFS=true LXC=false
+just device KSU=true SUSFS=true LXC=false USB_SERIAL=true USB_NET=true
 ```
 
 The recipes pass these values to `build.sh` as environment variables.
@@ -124,6 +124,9 @@ The default settings live in `config.sh`. Override the supported settings for on
 | `KSU` | Add KernelSU | Boolean | `false` |
 | `SUSFS` | Add SuSFS to a KernelSU build | Boolean | `false` |
 | `LXC` | Apply the Linux Containers (LXC) patch | Boolean | `false` |
+| `USB_SERIAL` | Enable built-in USB serial adapter drivers | Boolean | `false` |
+| `USB_NET` | Enable built-in USB network adapter drivers | Boolean | `false` |
+| `DROIDSPACES` | Apply the Droidspaces kABI patch and config fragment | Boolean | `false` |
 | `STOCK_CONFIG` | Apply the stock configuration patch | `auto`, `true`, `false` | `auto`: device resolves to `false`, generic resolves to `true` |
 | `BRANCH_OVERRIDE` | Override the selected target's kernel source branch | Branch name | Device value from `config.sh`; generic uses `main` |
 | `JOBS` | Set parallel `make` jobs | Integer | `nproc --all` |
@@ -142,6 +145,9 @@ Feature rules:
 - `KSU=true` runs the KernelSU setup script from `ESK-Project/ReSukiSU@main`.
 - `SUSFS=true` requires `KSU=true` and applies the configured SuSFS patches.
 - `LXC=true` is valid only for `device`, and only when that branch sets `DEVICE_LXC_SUPPORTED=true` in `config.sh`.
+- `DROIDSPACES=true` applies the Droidspaces kABI patch and merges `kernel_patches/droidspaces.config`.
+- `USB_SERIAL=true` merges `kernel_patches/usb_serial.config` to build common USB serial adapters into the kernel: FTDI, CP210x, PL2303, CH341, plus Qualcomm modem serial drivers.
+- `USB_NET=true` merges `kernel_patches/usb_net.config` to build common USB network adapters into the kernel: CDC Ethernet/NCM/EEM, RNDIS phone tethering, AX88179, RTL8150/8152, LAN78XX, SMSC75xx/95xx, DM9601, QMI WWAN and Sierra modems, and iPhone ethernet.
 - `STOCK_CONFIG=auto` follows the target defaults shown in the table.
 - `BRANCH_OVERRIDE` changes only the selected kernel source branch. It does not switch the builder branch or change `DEVICE_NAME`.
 - `TG_NOTIFY=true` requires both `TG_BOT_TOKEN` and `TG_CHAT_ID`.
@@ -209,6 +215,6 @@ just clean
 - `ci/`: module handling, packaging, metadata, and Telegram notifications
 - `py/`: uv-managed Python 3.14 helper CLI for API and JSON work
 - `modules/`: branch-owned `modules.load` files used by device packaging
-- `kernel_patches/`: optional stock configuration and LXC patches
+- `kernel_patches/`: optional stock configuration, LXC, Droidspaces, and USB feature patches
 - `.github/matrix/`: release feature combinations for each target
 - `.github/workflows/`: checks, manual builds, and release workflows

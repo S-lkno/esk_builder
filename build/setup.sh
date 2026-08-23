@@ -79,6 +79,8 @@ init_build() {
     SUSFS="$(resolve_bool "${SUSFS-}" "$SUSFS_DEFAULT")"
     LXC="$(resolve_bool "${LXC-}" "$LXC_DEFAULT")"
     DROIDSPACES="$(resolve_bool "${DROIDSPACES-}" "$DROIDSPACES_DEFAULT")"
+    USB_SERIAL="$(resolve_bool "${USB_SERIAL-}" "$USB_SERIAL_DEFAULT")"
+    USB_NET="$(resolve_bool "${USB_NET-}" "$USB_NET_DEFAULT")"
     STOCK_CONFIG="$(resolve_bool "${STOCK_CONFIG-}" "$STOCK_CONFIG_DEFAULT" true)"
 
     TG_NOTIFY="$(resolve_bool "${TG_NOTIFY-}" "$TG_NOTIFY_DEFAULT")"
@@ -247,6 +249,18 @@ prepare_build() {
 
         info "Merge Droidspaces config fragment"
         KCONFIG_CONFIG="arch/arm64/configs/$KERNEL_DEFCONFIG" scripts/kconfig/merge_config.sh -m -r "arch/arm64/configs/$KERNEL_DEFCONFIG" "$KERNEL_PATCHES/droidspaces.config"
+    fi
+
+    # USB serial
+    if is_true "$USB_SERIAL"; then
+        info "Merge USB serial config fragment"
+        KCONFIG_CONFIG="arch/arm64/configs/$KERNEL_DEFCONFIG" scripts/kconfig/merge_config.sh -m -r "arch/arm64/configs/$KERNEL_DEFCONFIG" "$KERNEL_PATCHES/usb_serial.config"
+    fi
+
+    # USB network adapters
+    if is_true "$USB_NET"; then
+        info "Merge USB network config fragment"
+        KCONFIG_CONFIG="arch/arm64/configs/$KERNEL_DEFCONFIG" scripts/kconfig/merge_config.sh -m -r "arch/arm64/configs/$KERNEL_DEFCONFIG" "$KERNEL_PATCHES/usb_net.config"
     fi
 
     if is_true "$STOCK_CONFIG"; then

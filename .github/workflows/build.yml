@@ -21,6 +21,12 @@ on:
       DROIDSPACES:
         type: boolean
         required: true
+      USB_SERIAL:
+        type: boolean
+        required: true
+      USB_NET:
+        type: boolean
+        required: true
       STOCK_CONFIG:
         type: string
         required: true
@@ -64,6 +70,16 @@ on:
 
       DROIDSPACES:
         description: "Apply Droidspaces patches?"
+        default: false
+        type: boolean
+
+      USB_SERIAL:
+        description: "Enable USB serial adapters?"
+        default: false
+        type: boolean
+
+      USB_NET:
+        description: "Enable USB network adapters?"
         default: false
         type: boolean
 
@@ -131,9 +147,10 @@ jobs:
         uses: actions/cache/restore@v5.0.3
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ inputs.DROIDSPACES }}-${{ github.ref_name }}-${{ github.sha }}
+          key: ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ inputs.DROIDSPACES }}-${{ inputs.USB_SERIAL }}-${{ inputs.USB_NET }}-${{ github.ref_name }}-${{ github.sha }}
           restore-keys: |
-            ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ inputs.DROIDSPACES }}-${{ github.ref_name }}-
+            ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ inputs.DROIDSPACES }}-${{ inputs.USB_SERIAL }}-${{ inputs.USB_NET }}-${{ github.ref_name }}-
+            ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ inputs.DROIDSPACES }}-${{ inputs.USB_SERIAL }}-${{ inputs.USB_NET }}-
             ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ inputs.DROIDSPACES }}-
             ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-
             ccache-${{ env.clang_hash }}-
@@ -147,6 +164,8 @@ jobs:
           SUSFS: ${{ inputs.SUSFS }}
           LXC: ${{ inputs.LXC }}
           DROIDSPACES: ${{ inputs.DROIDSPACES }}
+          USB_SERIAL: ${{ inputs.USB_SERIAL }}
+          USB_NET: ${{ inputs.USB_NET }}
           STOCK_CONFIG: ${{ inputs.STOCK_CONFIG }}
           TG_NOTIFY: ${{ inputs.TG_NOTIFY }}
           IS_RELEASE: ${{ inputs.IS_RELEASE }}
@@ -174,7 +193,7 @@ jobs:
         uses: actions/cache/save@v5.0.3
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ inputs.DROIDSPACES }}-${{ github.ref_name }}-${{ github.sha }}
+          key: ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ inputs.DROIDSPACES }}-${{ inputs.USB_SERIAL }}-${{ inputs.USB_NET }}-${{ github.ref_name }}-${{ github.sha }}
 
       - name: Upload GitHub metadata artifact
         uses: actions/upload-artifact@v6
