@@ -147,7 +147,7 @@ Feature rules:
 - `LXC=true` is valid only for `device`, and only when that branch sets `DEVICE_LXC_SUPPORTED=true` in `config.sh`.
 - `DROIDSPACES=true` applies the Droidspaces kABI patch and merges `kernel_patches/droidspaces.config`.
 - `USB_SERIAL=true` merges `kernel_patches/usb_serial.config` to build common USB serial adapters into the kernel: FTDI, CP210x, PL2303, CH341, plus Qualcomm modem serial drivers.
-- `USB_NET=true` merges `kernel_patches/usb_net.config` to build common USB network adapters into the kernel: CDC Ethernet/NCM/EEM, RNDIS phone tethering, AX88179, RTL8150/8152, LAN78XX, SMSC75xx/95xx, DM9601, QMI WWAN and Sierra modems, and iPhone ethernet.
+- `USB_NET=true` merges `kernel_patches/usb_net.config` to build common USB network adapters into the kernel: wired CDC Ethernet/NCM/EEM, RNDIS phone tethering, AX88179, RTL8150/8152, LAN78XX, SMSC75xx/95xx, DM9601, QMI WWAN and Sierra modems, and iPhone ethernet, plus common Wi-Fi USB dongles (Realtek rtl8xxxu/rtl8187, Ralink rt2x00 USB, Atheros ath9k_htc/carl9170/ar5523, ZyDAS, wireless RNDIS). Some dongles additionally need their firmware file pushed to `/vendor/firmware` or `/system/etc/firmware`, and Android may not manage a USB dongle through its Wi-Fi settings without root tools.
 - `STOCK_CONFIG=auto` follows the target defaults shown in the table.
 - `BRANCH_OVERRIDE` changes only the selected kernel source branch. It does not switch the builder branch or change `DEVICE_NAME`.
 - `TG_NOTIFY=true` requires both `TG_BOT_TOKEN` and `TG_CHAT_ID`.
