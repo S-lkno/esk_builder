@@ -81,6 +81,7 @@ init_build() {
     DROIDSPACES="$(resolve_bool "${DROIDSPACES-}" "$DROIDSPACES_DEFAULT")"
     USB_SERIAL="$(resolve_bool "${USB_SERIAL-}" "$USB_SERIAL_DEFAULT")"
     USB_NET="$(resolve_bool "${USB_NET-}" "$USB_NET_DEFAULT")"
+    USB_WLAN="$(resolve_bool "${USB_WLAN-}" "$USB_WLAN_DEFAULT")"
     STOCK_CONFIG="$(resolve_bool "${STOCK_CONFIG-}" "$STOCK_CONFIG_DEFAULT" true)"
 
     TG_NOTIFY="$(resolve_bool "${TG_NOTIFY-}" "$TG_NOTIFY_DEFAULT")"
@@ -261,6 +262,12 @@ prepare_build() {
     if is_true "$USB_NET"; then
         info "Merge USB network config fragment"
         KCONFIG_CONFIG="arch/arm64/configs/$KERNEL_DEFCONFIG" scripts/kconfig/merge_config.sh -m -r "arch/arm64/configs/$KERNEL_DEFCONFIG" "$KERNEL_PATCHES/usb_net.config"
+    fi
+
+    # USB Wi-Fi adapters
+    if is_true "$USB_WLAN"; then
+        info "Merge USB WLAN config fragment"
+        KCONFIG_CONFIG="arch/arm64/configs/$KERNEL_DEFCONFIG" scripts/kconfig/merge_config.sh -m -r "arch/arm64/configs/$KERNEL_DEFCONFIG" "$KERNEL_PATCHES/usb_wlan.config"
     fi
 
     if is_true "$STOCK_CONFIG"; then

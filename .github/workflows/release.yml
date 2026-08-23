@@ -60,6 +60,7 @@ jobs:
       DROIDSPACES: ${{ matrix.variant.DROIDSPACES }}
       USB_SERIAL: ${{ matrix.variant.USB_SERIAL }}
       USB_NET: ${{ matrix.variant.USB_NET }}
+      USB_WLAN: ${{ matrix.variant.USB_WLAN }}
       STOCK_CONFIG: auto
       TG_NOTIFY: false
       IS_RELEASE: true

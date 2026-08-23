@@ -117,6 +117,11 @@ main() {
     count package_anykernel "$PACKAGE_NAME"
     count package_bootimg "$PACKAGE_NAME"
 
+    # KernelSU module with USB Wi-Fi firmware
+    if is_true "$USB_WLAN"; then
+        count package_firmware "$PACKAGE_NAME"
+    fi
+
     # Github Actions metadata
     count write_metadata "$PACKAGE_NAME"
 

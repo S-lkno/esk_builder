@@ -91,6 +91,59 @@ package_bootimg() {
     popd > /dev/null
 }
 
+package_firmware() {
+    local package_name="$1"
+    local package_path="$OUT_DIR/$package_name-firmware-KSU.zip"
+
+    step "Package USB WLAN firmware module"
+
+    local fw_root="$OUT_DIR/firmware-module"
+    reset_dir "$fw_root"
+    mkdir -p "$fw_root/system/vendor/firmware"
+
+    cat > "$fw_root/module.prop" << EOF
+id=usb_wifi_firmware
+name=USB WiFi Dongle Firmware
+version=$KERNEL_VERSION
+versionCode=1
+author=$KERNEL_NAME Builder
+description=Firmware for the USB Wi-Fi adapters enabled by USB_WLAN=true: Ralink rt2x00 USB, Atheros ath9k_htc/carl9170/ar5523. Overlays files into /vendor/firmware individually via magic mount. Requires a root manager such as KernelSU or Magisk.
+EOF
+
+    cat > "$fw_root/customize.sh" << 'EOF'
+SKIPUNZIP=0
+
+ui_print "- Installing USB Wi-Fi dongle firmware to /vendor/firmware"
+ui_print "- Replug the adapter if it was already plugged in before boot"
+ui_print "- Android settings won't manage wlan1; configure it manually with root"
+EOF
+
+    local fw_file fw_dir ok=0
+    for fw_file in "${USB_FIRMWARE_FILES[@]}"; do
+        fw_dir="$(dirname "$fw_file")"
+        [[ $fw_dir == "." ]] || mkdir -p "$fw_root/system/vendor/firmware/$fw_dir"
+        if curl -fsSLo "$fw_root/system/vendor/firmware/$fw_file" "$LINUX_FIRMWARE_URL/$fw_file"; then
+            ok=$((ok + 1))
+            info "Firmware downloaded: $fw_file"
+        else
+            rm -f "$fw_root/system/vendor/firmware/$fw_file"
+            warn "Firmware download failed, skipping: $fw_file"
+        fi
+    done
+
+    if ((ok == 0)); then
+        error "No USB Wi-Fi firmware could be downloaded"
+    fi
+
+    pushd "$fw_root" > /dev/null
+    rm -f "$package_path"
+    zip -r9q -T -X "$package_path" .
+    popd > /dev/null
+
+    rm -rf "$fw_root"
+    success "USB WLAN firmware module packaged"
+}
+
 write_metadata() {
     step "Write metadata"
 
@@ -130,7 +183,7 @@ $(tg_run_line)
 *Kernel:* $(escape_md_v2 "$KERNEL_VERSION")
 *Commit:* [$(escape_md_v2 "$KERNEL_COMMIT")]($(escape_md_v2 "$kernel_commit_url"))
 *Compiler:* $(escape_md_v2 "$COMPILER_STRING")
-*Features:* KSU $(parse_bool "$KSU"), SuSFS $(is_true "$SUSFS" && escape_md_v2 "$SUSFS_VERSION" || echo "Disabled"), LXC $(parse_bool "$LXC"), Droidspaces $(parse_bool "$DROIDSPACES"), USB serial $(parse_bool "$USB_SERIAL"), USB net $(parse_bool "$USB_NET"), Stock config $(parse_bool "$STOCK_CONFIG")
+*Features:* KSU $(parse_bool "$KSU"), SuSFS $(is_true "$SUSFS" && escape_md_v2 "$SUSFS_VERSION" || echo "Disabled"), LXC $(parse_bool "$LXC"), Droidspaces $(parse_bool "$DROIDSPACES"), USB serial $(parse_bool "$USB_SERIAL"), USB net $(parse_bool "$USB_NET"), USB WLAN $(parse_bool "$USB_WLAN"), Stock config $(parse_bool "$STOCK_CONFIG")
 EOF
     )
 

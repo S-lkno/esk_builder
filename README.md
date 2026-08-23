@@ -125,7 +125,8 @@ The default settings live in `config.sh`. Override the supported settings for on
 | `SUSFS` | Add SuSFS to a KernelSU build | Boolean | `false` |
 | `LXC` | Apply the Linux Containers (LXC) patch | Boolean | `false` |
 | `USB_SERIAL` | Enable built-in USB serial adapter drivers | Boolean | `false` |
-| `USB_NET` | Enable built-in USB network adapter drivers | Boolean | `false` |
+| `USB_NET` | Enable built-in USB wired network and tethering drivers | Boolean | `false` |
+| `USB_WLAN` | Enable built-in USB Wi-Fi (wireless LAN) adapter drivers | Boolean | `false` |
 | `DROIDSPACES` | Apply the Droidspaces kABI patch and config fragment | Boolean | `false` |
 | `STOCK_CONFIG` | Apply the stock configuration patch | `auto`, `true`, `false` | `auto`: device resolves to `false`, generic resolves to `true` |
 | `BRANCH_OVERRIDE` | Override the selected target's kernel source branch | Branch name | Device value from `config.sh`; generic uses `main` |
@@ -147,7 +148,8 @@ Feature rules:
 - `LXC=true` is valid only for `device`, and only when that branch sets `DEVICE_LXC_SUPPORTED=true` in `config.sh`.
 - `DROIDSPACES=true` applies the Droidspaces kABI patch and merges `kernel_patches/droidspaces.config`.
 - `USB_SERIAL=true` merges `kernel_patches/usb_serial.config` to build common USB serial adapters into the kernel: FTDI, CP210x, PL2303, CH341, plus Qualcomm modem serial drivers.
-- `USB_NET=true` merges `kernel_patches/usb_net.config` to build common USB network adapters into the kernel: wired CDC Ethernet/NCM/EEM, RNDIS phone tethering, AX88179, RTL8150/8152, LAN78XX, SMSC75xx/95xx, DM9601, QMI WWAN and Sierra modems, and iPhone ethernet, plus common Wi-Fi USB dongles (Realtek rtl8xxxu/rtl8187, Ralink rt2x00 USB, Atheros ath9k_htc/carl9170/ar5523, ZyDAS, wireless RNDIS). Some dongles additionally need their firmware file pushed to `/vendor/firmware` or `/system/etc/firmware`, and Android may not manage a USB dongle through its Wi-Fi settings without root tools.
+- `USB_NET=true` merges `kernel_patches/usb_net.config` to build wired USB network support into the kernel: CDC Ethernet/NCM/EEM, RNDIS phone tethering, AX88179, RTL8150/8152, LAN78XX, SMSC75xx/95xx, DM9601, QMI WWAN and Sierra modems, and iPhone ethernet.
+- `USB_WLAN=true` merges `kernel_patches/usb_wlan.config` to build USB Wi-Fi dongles into the kernel: Ralink rt2x00 USB (RT2870/RT3070 and friends), Realtek rtl8187/rtl8xxxu, Atheros ath9k_htc/carl9170/ar5523, ZyDAS, and wireless RNDIS. It also packages `<package>-firmware-KSU.zip`, a KernelSU module that overlays the required firmware files (rt2870.bin, htc_9271.fw, htc_7010.fw, carl9170-1.fw, ar5523.bin) into `/vendor/firmware`. Android does not manage dongles through its Wi-Fi settings; configure `wlan1` manually with root.
 - `STOCK_CONFIG=auto` follows the target defaults shown in the table.
 - `BRANCH_OVERRIDE` changes only the selected kernel source branch. It does not switch the builder branch or change `DEVICE_NAME`.
 - `TG_NOTIFY=true` requires both `TG_BOT_TOKEN` and `TG_CHAT_ID`.
@@ -165,6 +167,7 @@ Each build clears `out/` before packaging. `<package>` has the form `${KERNEL_NA
 | path | target | description |
 | ---- | ------ | ----------- |
 | `out/<package>-AnyKernel3.zip` | Both | Flashable AnyKernel3 package containing the compiled kernel |
+| `out/<package>-firmware-KSU.zip` | Both | KernelSU module overlaying USB Wi-Fi dongle firmware into `/vendor/firmware`; generated when `USB_WLAN=true` |
 | `out/module.tar.xz` | Device | Staged `vendor_boot` and `vendor_dlkm` modules, also copied into the AnyKernel3 package |
 | `out/<package>-boot-raw.img` | Generic | Boot image containing the raw kernel image |
 | `out/<package>-boot-gz.img` | Generic | Boot image containing the gzip-compressed kernel image |

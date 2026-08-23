@@ -48,6 +48,7 @@ LXC_DEFAULT="false"
 DROIDSPACES_DEFAULT="false"
 USB_SERIAL_DEFAULT="false"
 USB_NET_DEFAULT="false"
+USB_WLAN_DEFAULT="false"
 TG_NOTIFY_DEFAULT="false"
 RESET_SOURCES_DEFAULT="false"
 IS_RELEASE_DEFAULT="false"
@@ -69,6 +70,16 @@ SUSFS_REPO="gitlab.com:simonpunk/susfs4ksu@gki-android12-5.10"
 # Other sources
 GKI_URL="https://dl.google.com/android/gki/gki-certified-boot-android12-5.10-2025-09_r1.zip"
 LIBFAKESTAT_RELEASE_API="https://api.github.com/repos/cctv18/libfakestat/releases/latest"
+LINUX_FIRMWARE_URL="https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain"
+
+# Firmware files packaged into the USB_WLAN KernelSU module
+USB_FIRMWARE_FILES=(
+    rt2870.bin
+    htc_9271.fw
+    htc_7010.fw
+    carl9170-1.fw
+    ar5523.bin
+)
 
 case "$BUILD_TARGET" in
     device)

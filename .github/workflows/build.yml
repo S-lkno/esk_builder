@@ -27,6 +27,9 @@ on:
       USB_NET:
         type: boolean
         required: true
+      USB_WLAN:
+        type: boolean
+        required: true
       STOCK_CONFIG:
         type: string
         required: true
@@ -80,6 +83,11 @@ on:
 
       USB_NET:
         description: "Enable USB network adapters?"
+        default: false
+        type: boolean
+
+      USB_WLAN:
+        description: "Enable USB Wi-Fi adapters (dongles)?"
         default: false
         type: boolean
 
@@ -147,9 +155,10 @@ jobs:
         uses: actions/cache/restore@v5.0.3
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ inputs.DROIDSPACES }}-${{ inputs.USB_SERIAL }}-${{ inputs.USB_NET }}-${{ github.ref_name }}-${{ github.sha }}
+          key: ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ inputs.DROIDSPACES }}-${{ inputs.USB_SERIAL }}-${{ inputs.USB_NET }}-${{ inputs.USB_WLAN }}-${{ github.ref_name }}-${{ github.sha }}
           restore-keys: |
-            ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ inputs.DROIDSPACES }}-${{ inputs.USB_SERIAL }}-${{ inputs.USB_NET }}-${{ github.ref_name }}-
+            ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ inputs.DROIDSPACES }}-${{ inputs.USB_SERIAL }}-${{ inputs.USB_NET }}-${{ inputs.USB_WLAN }}-${{ github.ref_name }}-
+            ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ inputs.DROIDSPACES }}-${{ inputs.USB_SERIAL }}-${{ inputs.USB_NET }}-${{ inputs.USB_WLAN }}-
             ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ inputs.DROIDSPACES }}-${{ inputs.USB_SERIAL }}-${{ inputs.USB_NET }}-
             ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ inputs.DROIDSPACES }}-
             ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-
@@ -166,6 +175,7 @@ jobs:
           DROIDSPACES: ${{ inputs.DROIDSPACES }}
           USB_SERIAL: ${{ inputs.USB_SERIAL }}
           USB_NET: ${{ inputs.USB_NET }}
+          USB_WLAN: ${{ inputs.USB_WLAN }}
           STOCK_CONFIG: ${{ inputs.STOCK_CONFIG }}
           TG_NOTIFY: ${{ inputs.TG_NOTIFY }}
           IS_RELEASE: ${{ inputs.IS_RELEASE }}
@@ -193,7 +203,7 @@ jobs:
         uses: actions/cache/save@v5.0.3
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ inputs.DROIDSPACES }}-${{ inputs.USB_SERIAL }}-${{ inputs.USB_NET }}-${{ github.ref_name }}-${{ github.sha }}
+          key: ccache-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.LXC }}-${{ inputs.DROIDSPACES }}-${{ inputs.USB_SERIAL }}-${{ inputs.USB_NET }}-${{ inputs.USB_WLAN }}-${{ github.ref_name }}-${{ github.sha }}
 
       - name: Upload GitHub metadata artifact
         uses: actions/upload-artifact@v6
@@ -207,6 +217,14 @@ jobs:
         with:
           name: ${{ steps.build.outputs.name }}-${{ steps.build.outputs.variant }}-AnyKernel3
           path: ${{ steps.build.outputs.out_dir }}/${{ steps.build.outputs.package_name }}-AnyKernel3.zip
+          compression-level: 0
+
+      - name: Upload USB firmware module artifact
+        uses: actions/upload-artifact@v6
+        if: ${{ inputs.USB_WLAN }}
+        with:
+          name: ${{ steps.build.outputs.name }}-${{ steps.build.outputs.variant }}-firmware
+          path: ${{ steps.build.outputs.out_dir }}/${{ steps.build.outputs.package_name }}-firmware-KSU.zip
           compression-level: 0
 
       - name: Upload boot image artifact
