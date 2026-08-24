@@ -81,6 +81,15 @@ USB_FIRMWARE_FILES=(
     ar5523.bin
 )
 
+# Kernel modules bundled into the USB_WLAN firmware module and insmodded by its
+# post-fs-data hook, in dependency order. They are kept out of vendor_dlkm so
+# that flashing a build never grows that image.
+USB_WLAN_MODULES=(
+    eeprom_93cx6 rt2x00lib rt2x00usb rt2800lib rt2800usb
+    ath9k_hw ath9k_common ath9k_htc carl9170 ar5523
+    rtl8187 rtl8xxxu zd1201 zd1211rw
+)
+
 case "$BUILD_TARGET" in
     device)
         TARGET_NAME="$DEVICE_NAME"

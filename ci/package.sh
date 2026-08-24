@@ -107,15 +107,15 @@ name=USB WiFi Dongle Firmware
 version=$KERNEL_VERSION
 versionCode=1
 author=$KERNEL_NAME Builder
-description=Firmware for the USB Wi-Fi adapters enabled by USB_WLAN=true: Ralink rt2x00 USB, Atheros ath9k_htc/carl9170/ar5523. Overlays files into /vendor/firmware individually via magic mount. Requires a root manager such as KernelSU or Magisk.
+description=Firmware and drivers for the USB Wi-Fi adapters enabled by USB_WLAN=true: Ralink rt2x00 USB, Atheros ath9k_htc/carl9170/ar5523. Overlays firmware into /vendor/firmware via magic mount and loads the dongle drivers at boot through post-fs-data. Requires a root manager such as KernelSU or Magisk.
 EOF
 
     cat > "$fw_root/customize.sh" << 'EOF'
 SKIPUNZIP=0
 
 ui_print "- Installing USB Wi-Fi dongle firmware to /vendor/firmware"
-ui_print "- Replug the adapter if it was already plugged in before boot"
-ui_print "- Android settings won't manage wlan1; configure it manually with root"
+ui_print "- Dongle drivers load at the next boot; replug the adapter after booting"
+ui_print "- Android settings won't manage dongle interfaces; configure them manually with root"
 EOF
 
     local fw_file fw_dir ok=0
@@ -134,6 +134,31 @@ EOF
     if ((ok == 0)); then
         error "No USB Wi-Fi firmware could be downloaded"
     fi
+
+    local mod mod_dir="$fw_root/system/lib/modules" copied=0
+    mkdir -p "$mod_dir"
+
+    {
+        echo '#!/system/bin/sh'
+        echo
+        # shellcheck disable=SC2016
+        echo 'MODDIR=${0%/*}'
+        echo
+        for mod in "${USB_WLAN_MODULES[@]}"; do
+            echo "insmod \"\$MODDIR/system/lib/modules/$mod.ko\" 2>/dev/null"
+        done
+    } > "$fw_root/post-fs-data.sh"
+    chmod 0755 "$fw_root/post-fs-data.sh"
+
+    for mod in "${USB_WLAN_MODULES[@]}"; do
+        if [[ -f $MOD_STAGE/usb_wlan/$mod.ko ]]; then
+            cp -p "$MOD_STAGE/usb_wlan/$mod.ko" "$mod_dir/"
+            copied=$((copied + 1))
+        else
+            warn "USB WLAN module missing from staging: $mod.ko"
+        fi
+    done
+    info "Bundled $copied USB WLAN kernel module(s)"
 
     pushd "$fw_root" > /dev/null
     rm -f "$package_path"

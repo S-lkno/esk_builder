@@ -16,6 +16,23 @@ flatten() {
     success "Modules flattened"
 }
 
+split_wlan_modules() {
+    local mod
+
+    step "Divert USB WLAN modules to firmware packaging"
+
+    mkdir -p "$MOD_STAGE/usb_wlan"
+    for mod in "${USB_WLAN_MODULES[@]}"; do
+        if [[ -f $MOD_FLAT/$mod.ko ]]; then
+            mv -f "$MOD_FLAT/$mod.ko" "$MOD_STAGE/usb_wlan/"
+        else
+            warn "USB WLAN module not built: $mod.ko"
+        fi
+    done
+
+    success "USB WLAN modules diverted"
+}
+
 vendor_boot() {
     local krel src payload mods_dir depmod_root depmod_meta_dir depmod_dir load_vb load_rc mod
     local -a modules
@@ -135,6 +152,9 @@ build_module() {
     reset_dir "$MOD_STAGE"
 
     flatten
+    if [[ $USB_WLAN == true ]]; then
+        split_wlan_modules
+    fi
     vendor_boot
     vendor_dlkm
 

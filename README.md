@@ -149,7 +149,7 @@ Feature rules:
 - `DROIDSPACES=true` applies the Droidspaces kABI patch and merges `kernel_patches/droidspaces.config`.
 - `USB_SERIAL=true` merges `kernel_patches/usb_serial.config` to build common USB serial adapters into the kernel: FTDI, CP210x, PL2303, CH341, plus Qualcomm modem serial drivers.
 - `USB_NET=true` merges `kernel_patches/usb_net.config` to build wired USB network support into the kernel: CDC Ethernet/NCM/EEM, RNDIS phone tethering, AX88179, RTL8150/8152, LAN78XX, SMSC75xx/95xx, DM9601, QMI WWAN and Sierra modems, and iPhone ethernet.
-- `USB_WLAN=true` merges `kernel_patches/usb_wlan.config` to build USB Wi-Fi dongles as modules: Ralink rt2x00 USB (RT2870/RT3070 and friends), Realtek rtl8187/rtl8xxxu, Atheros ath9k_htc/carl9170/ar5523, ZyDAS, and wireless RNDIS. The fragment re-enables the WLAN vendor menus that `gki_defconfig` closes, the modules are packaged into `vendor_dlkm`, and `modules/load/modules.load` loads them at boot. It also packages `<package>-firmware-KSU.zip`, a KernelSU module that overlays the required firmware files (rt2870.bin, htc_9271.fw, htc_7010.fw, carl9170-1.fw, ar5523.bin) into `/vendor/firmware`. Android does not manage dongles through its Wi-Fi settings; configure `wlan1` manually with root.
+- `USB_WLAN=true` merges `kernel_patches/usb_wlan.config` to build USB Wi-Fi dongles as modules: Ralink rt2x00 USB (RT2870/RT3070 and friends), Realtek rtl8187/rtl8xxxu, Atheros ath9k_htc/carl9170/ar5523, ZyDAS, and wireless RNDIS. The fragment re-enables the WLAN vendor menus that `gki_defconfig` closes. To keep the flashed `vendor_dlkm` image from growing, the modules are not packaged into it: they ship inside `<package>-firmware-KSU.zip`, a KernelSU module that overlays the required firmware files (rt2870.bin, htc_9271.fw, htc_7010.fw, carl9170-1.fw, ar5523.bin) into `/vendor/firmware` and loads the drivers at boot via its `post-fs-data.sh`. Android does not manage dongles through its Wi-Fi settings; configure the interface manually with root.
 - `STOCK_CONFIG=auto` follows the target defaults shown in the table.
 - `BRANCH_OVERRIDE` changes only the selected kernel source branch. It does not switch the builder branch or change `DEVICE_NAME`.
 - `TG_NOTIFY=true` requires both `TG_BOT_TOKEN` and `TG_CHAT_ID`.
@@ -167,7 +167,7 @@ Each build clears `out/` before packaging. `<package>` has the form `${KERNEL_NA
 | path | target | description |
 | ---- | ------ | ----------- |
 | `out/<package>-AnyKernel3.zip` | Both | Flashable AnyKernel3 package containing the compiled kernel |
-| `out/<package>-firmware-KSU.zip` | Both | KernelSU module overlaying USB Wi-Fi dongle firmware into `/vendor/firmware`; generated when `USB_WLAN=true` |
+| `out/<package>-firmware-KSU.zip` | Both | KernelSU module overlaying USB Wi-Fi dongle firmware into `/vendor/firmware` and loading the dongle drivers at boot; generated when `USB_WLAN=true` |
 | `out/module.tar.xz` | Device | Staged `vendor_boot` and `vendor_dlkm` modules, also copied into the AnyKernel3 package |
 | `out/<package>-boot-raw.img` | Generic | Boot image containing the raw kernel image |
 | `out/<package>-boot-gz.img` | Generic | Boot image containing the gzip-compressed kernel image |

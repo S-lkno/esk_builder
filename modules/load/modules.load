@@ -173,18 +173,3 @@ mi_thermal_interface.ko
 kshrink_slabd.ko
 kshrink_lruvecd.ko
 
-# USB Wi-Fi dongles (USB_WLAN=true builds; skipped harmlessly otherwise)
-eeprom_93cx6.ko
-rt2x00lib.ko
-rt2x00usb.ko
-rt2800lib.ko
-rt2800usb.ko
-ath9k_hw.ko
-ath9k_common.ko
-ath9k_htc.ko
-carl9170.ko
-ar5523.ko
-rtl8187.ko
-rtl8xxxu.ko
-zd1201.ko
-zd1211rw.ko
